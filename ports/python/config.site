@@ -15,3 +15,8 @@ ac_cv_func_getnameinfo=no
 # TODO(sbc): Remove this once uname() gets added to libnacl.
 # https://code.google.com/p/nativeclient/issues/detail?id=3997
 ac_cv_func_uname=yes
+
+# Configure detects waitpid as unimplemented and marks as unavailable. That
+# causes python to omit os.waitpid, which causes problems. It's better to
+# include it and let it fail when used, just like wait4 and other functions.
+ac_cv_func_waitpid=yes

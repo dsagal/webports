@@ -42,7 +42,9 @@ ConfigureStep() {
     export ac_cv_func_wait3=no
     export ac_cv_func_wait4=no
   fi
-  EnableCliMain
+  if [ -z "${NACL_BARE:=}" ]; then
+    EnableCliMain
+  fi
   EnableGlibcCompat
   DefaultConfigureStep
   if [ "${NACL_LIBC}" = "newlib" ]; then

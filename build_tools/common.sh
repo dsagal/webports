@@ -1114,6 +1114,13 @@ DefaultPythonModuleBuildStep() {
   export CXXFLAGS="${NACLPORTS_CPPFLAGS} ${NACLPORTS_CXXFLAGS}"
   export LDFLAGS="${NACLPORTS_LDFLAGS} ${NACLPORTS_LIBS}"
   export LIBS="${NACLPORTS_LIBS}"
+
+  if [ "${NACL_SHARED}" = "1" ]; then
+    export NACL_PORT_BUILD=${1:-host}
+    export CFLAGS="$CFLAGS -fPIC"
+    export LDSHARED="$CC -shared -fPIC"
+  fi
+
   LogExecute "${NACL_HOST_PYTHON}" setup.py ${NACL_PYSETUP_ARGS} \
     install "--prefix=${NACL_DEST_PYROOT}"
   MakeDir "${DEST_PYTHON_OBJS}/${PACKAGE_NAME}"
