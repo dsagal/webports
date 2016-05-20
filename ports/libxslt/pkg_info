@@ -1,0 +1,6 @@
+NAME=libxslt
+VERSION=1.1.29
+URL=ftp://xmlsoft.org/libxslt/libxslt-1.1.29-rc2.tar.gz
+LICENSE=MIT
+DEPENDS=(libxml2)
+SHA1=80afef8606ddf202659ae2d7e781848a0b7c07aa
