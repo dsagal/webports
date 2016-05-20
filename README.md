@@ -1,6 +1,11 @@
 webports
 ========
 
+```
+This clone includes changes to make Python (including some additional modules)
+work well in the NaCl standalone sandbox.
+```
+
 webports is collection of open source libraries and applications that
 have been ported to Native Client, along with set to tools for building
 and maintaining them.
