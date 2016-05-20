@@ -7,3 +7,7 @@ INSTALL_TARGETS="install-libLTLIBRARIES install-data"
 EXTRA_CONFIGURE_ARGS="--with-python=no"
 EXTRA_CONFIGURE_ARGS+=" --with-iconv=no"
 EXTRA_CONFIGURE_ARGS+=" --with-html=yes"
+
+if [ "${NACL_SHARED}" = "1" ]; then
+  NACLPORTS_CFLAGS+=" -fPIC"
+fi
