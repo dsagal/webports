@@ -3,7 +3,7 @@
 # found in the LICENSE file.
 
 MAKE_TARGETS="libxml2.la"
-INSTALL_TARGETS="install-libLTLIBRARIES install-data"
+INSTALL_TARGETS="install-libLTLIBRARIES install-data install-binSCRIPTS"
 EXTRA_CONFIGURE_ARGS="--with-python=no"
 EXTRA_CONFIGURE_ARGS+=" --with-iconv=no"
 EXTRA_CONFIGURE_ARGS+=" --with-html=yes"

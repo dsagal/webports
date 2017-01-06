@@ -1,5 +1,5 @@
 NAME=libxml2
-VERSION=2.9.3
-URL=ftp://xmlsoft.org/libxml2/libxml2-2.9.3.tar.gz
+VERSION=2.9.4
+URL=ftp://xmlsoft.org/libxml2/libxml2-2.9.4.tar.gz
 LICENSE=MIT
-SHA1=0301ce933637e0ceda049047dbefd18714f59b6e
+SHA1=958ae70baf186263a4bd801a81dd5d682aedd1db
