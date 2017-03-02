@@ -20,3 +20,8 @@ ac_cv_func_uname=yes
 # causes python to omit os.waitpid, which causes problems. It's better to
 # include it and let it fail when used, just like wait4 and other functions.
 ac_cv_func_waitpid=yes
+
+# Formatting of doubles falls back to an inferior version when their endianness
+# is unset (configure sets it to 'no' when cross_compiling is 'yes'). This does
+# limit sandboxed code to only running on little-endian architecture.
+ac_cv_little_endian_double=yes
