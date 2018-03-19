@@ -28,7 +28,7 @@ BuildHostPython() {
 }
 
 ConfigureStep() {
-  BuildHostPython
+  #BuildHostPython
   ChangeDir ${BUILD_DIR}
   # We pre-seed configure with certain results that it cannot determine
   # since we are doing a cross compile.  The $CONFIG_SITE file is sourced
@@ -40,6 +40,7 @@ ConfigureStep() {
   EXTRA_CONFIGURE_ARGS="--disable-ipv6"
   EXTRA_CONFIGURE_ARGS+=" --with-suffix=${NACL_EXEEXT}"
   EXTRA_CONFIGURE_ARGS+=" --build=x86_64-linux-gnu"
+  EXTRA_CONFIGURE_ARGS+=" --without-ensurepip"
   if [ "${NACL_DEBUG}" = 1 ]; then
     EXTRA_CONFIGURE_ARGS+=" --with-pydebug"
   fi
@@ -56,7 +57,9 @@ ConfigureStep() {
     export ac_cv_func_wait3=no
     export ac_cv_func_wait4=no
   fi
-  EnableCliMain
+  if [ -z "${NACL_BARE:=}" ]; then
+    EnableCliMain
+  fi
   EnableGlibcCompat
   DefaultConfigureStep
   if [ "${NACL_LIBC}" = "newlib" ]; then
@@ -82,7 +85,13 @@ PublishStep() {
   fi
 
   ChangeDir ${PUBLISH_DIR}
-  LogExecute tar cf ${tar_file} -C ${INSTALL_DIR}${PREFIX} lib/python3.4
+  LogExecute tar cf ${tar_file} -C ${INSTALL_DIR}${PREFIX} lib/python3.6
+  if [[ $NACL_SHARED == 1 ]]; then
+    # Extra shared libraries depedencies requires by python loadable modules
+    : #LogExecute tar rf ${tar_file} -h -C ${NACL_PREFIX} lib/libz.so.1 \
+    #  lib/libreadline.so lib/libncurses.so.5 lib/libbz2.so.1.0 \
+    #  lib/libssl.so.1.0.0 lib/libcrypto.so.1.0.0
+  fi
   LogExecute shasum ${tar_file} > ${tar_file}.hash
 
   LogExecute python ${TOOLS_DIR}/create_term.py python.nmf

@@ -1,10 +1,11 @@
 NAME=python3
-VERSION=3.4.2
-ARCHIVE_ROOT=Python-3.4.2
-URL=http://python.org/ftp/python/3.4.2/Python-3.4.2.tar.xz
+VERSION=3.6.4
+ARCHIVE_ROOT=Python-3.6.4
+URL=http://python.org/ftp/python/3.6.4/Python-3.6.4.tar.xz
 LICENSE=CUSTOM:LICENSE
 # missing decimal_point member in lconv struct lconv.
-BUILD_OS=linux
-DEPENDS=(readline zlib bzip2 gettext)
-SHA1=0727d8a8498733baabe6f51632b9bab0cbaa9ada
+# BUILD_OS=linux
+DEPENDS=(nacl-spawn)
+# DEPENDS=(readline zlib bzip2 gettext)
+SHA1=36a90695cda9298a0663e667c12909246c358851
 DISABLED_TOOLCHAIN=(emscripten)

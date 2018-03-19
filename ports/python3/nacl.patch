@@ -1,7 +1,7 @@
 diff --git a/Include/datetime.h b/Include/datetime.h
 --- a/Include/datetime.h
 +++ b/Include/datetime.h
-@@ -169,6 +169,8 @@ typedef struct {
+@@ -178,6 +178,8 @@ typedef struct {
  
  #ifdef Py_BUILD_CORE
  
@@ -13,26 +13,7 @@ diff --git a/Include/datetime.h b/Include/datetime.h
 diff --git a/Makefile.pre.in b/Makefile.pre.in
 --- a/Makefile.pre.in
 +++ b/Makefile.pre.in
-@@ -747,14 +747,18 @@ $(IO_OBJS): $(IO_H)
- 
- $(GRAMMAR_H): $(GRAMMAR_INPUT) $(PGENSRCS)
- 		@$(MKDIR_P) Include
-+ifndef CROSS_COMPILE
- 		$(MAKE) $(PGEN)
-+endif
- 		$(PGEN) $(GRAMMAR_INPUT) $(GRAMMAR_H) $(GRAMMAR_C)
- $(GRAMMAR_C): $(GRAMMAR_H) $(GRAMMAR_INPUT) $(PGENSRCS)
- 		$(MAKE) $(GRAMMAR_H)
- 		touch $(GRAMMAR_C)
- 
-+ifndef CROSS_COMPILE
- $(PGEN):	$(PGENOBJS)
- 		$(CC) $(OPT) $(PY_LDFLAGS) $(PGENOBJS) $(LIBS) -o $(PGEN)
-+endif
- 
- Parser/grammar.o:	$(srcdir)/Parser/grammar.c \
- 				$(srcdir)/Include/token.h \
-@@ -1539,9 +1543,12 @@ profile-removal:
+@@ -1648,9 +1648,12 @@ profile-removal:
  	rm -rf $(COVERAGE_REPORT)
  
  clobber: clean profile-removal
@@ -61,9 +42,9 @@ diff --git a/Modules/_ctypes/libffi/configure b/Modules/_ctypes/libffi/configure
 diff --git a/Modules/_datetimemodule.c b/Modules/_datetimemodule.c
 --- a/Modules/_datetimemodule.c
 +++ b/Modules/_datetimemodule.c
-@@ -7,6 +7,14 @@
- 
- #include <time.h>
+@@ -11,6 +11,14 @@
+ #  include <winsock2.h>         /* struct timeval */
+ #endif
  
 +#if defined(__native_client__) && !defined(__GLIBC__)
 +/* TODO(sbc): remove once this gets fixed:
@@ -79,7 +60,7 @@ diff --git a/Modules/_datetimemodule.c b/Modules/_datetimemodule.c
 diff --git a/Modules/_testcapimodule.c b/Modules/_testcapimodule.c
 --- a/Modules/_testcapimodule.c
 +++ b/Modules/_testcapimodule.c
-@@ -1810,6 +1810,9 @@ static int test_run_counter = 0;
+@@ -2205,6 +2205,9 @@ static int test_run_counter = 0;
  
  static PyObject *
  test_datetime_capi(PyObject *self, PyObject *args) {
@@ -89,7 +70,7 @@ diff --git a/Modules/_testcapimodule.c b/Modules/_testcapimodule.c
      if (PyDateTimeAPI) {
          if (test_run_counter) {
              /* Probably regrtest.py -R */
-@@ -1827,6 +1830,7 @@ test_datetime_capi(PyObject *self, PyObject *args) {
+@@ -2222,6 +2225,7 @@ test_datetime_capi(PyObject *self, PyObject *args) {
          Py_RETURN_NONE;
      else
          return NULL;
@@ -100,7 +81,7 @@ diff --git a/Modules/_testcapimodule.c b/Modules/_testcapimodule.c
 diff --git a/Modules/faulthandler.c b/Modules/faulthandler.c
 --- a/Modules/faulthandler.c
 +++ b/Modules/faulthandler.c
-@@ -15,6 +15,15 @@
+@@ -21,6 +21,15 @@
  #  define FAULTHANDLER_LATER
  #endif
  
@@ -116,80 +97,10 @@ diff --git a/Modules/faulthandler.c b/Modules/faulthandler.c
  #ifndef MS_WINDOWS
     /* register() is useless on Windows, because only SIGSEGV, SIGABRT and
        SIGILL can be handled by the process, and these signals can only be used
-diff --git a/Modules/pwdmodule.c b/Modules/pwdmodule.c
---- a/Modules/pwdmodule.c
-+++ b/Modules/pwdmodule.c
-@@ -87,6 +87,29 @@ mkpwent(struct passwd *p)
-     return v;
- }
- 
-+#ifdef __native_client__
-+// python relies on a working version of getpwuid(3)
-+// which Native Client does not yet provide.
-+// TODO(sbc): This should only really be needed when
-+// building for the sel_ldr.  It should be possible to
-+// use the C-library version (which tries of open files
-+// under /etc) when using nacl_io.
-+static struct passwd *my_getpwuid(uid_t uid)
-+{
-+    static struct passwd dummy = {
-+      "nacl_user",
-+      "nacl_pass",
-+      1,
-+      1,
-+      "NaCl User",
-+      "/home/nacl_user",
-+      "/bin/sh",
-+    };
-+    return &dummy;
-+}
-+#define getpwuid my_getpwuid
-+#endif
-+
- PyDoc_STRVAR(pwd_getpwuid__doc__,
- "getpwuid(uid) -> (pw_name,pw_passwd,pw_uid,\n\
-                   pw_gid,pw_gecos,pw_dir,pw_shell)\n\
-diff --git a/Modules/python.c b/Modules/python.c
---- a/Modules/python.c
-+++ b/Modules/python.c
-@@ -15,6 +15,22 @@ wmain(int argc, wchar_t **argv)
- }
- #else
- 
-+#ifdef __native_client__
-+#include "nacl_main.h"
-+
-+#ifdef __arm__
-+#define DATA_FILE "_platform_specific/arm/pydata.tar"
-+#elif defined __i386__
-+#define DATA_FILE "_platform_specific/i686/pydata.tar"
-+#elif defined __x86_64__
-+#define DATA_FILE "_platform_specific/x86_64/pydata.tar"
-+#elif defined __pnacl__
-+#define DATA_FILE "pydata.tar"
-+#else
-+#error "Unknown arch"
-+#endif
-+#endif
-+
- int
- main(int argc, char **argv)
- {
-@@ -26,6 +42,10 @@ main(int argc, char **argv)
- #ifdef __FreeBSD__
-     fp_except_t m;
- #endif
-+#ifdef __native_client__
-+    if (nacl_startup_untar(argv[0], DATA_FILE, "/"))
-+        return -1;
-+#endif
- 
-     argv_copy = (wchar_t **)PyMem_RawMalloc(sizeof(wchar_t*) * (argc+1));
-     argv_copy2 = (wchar_t **)PyMem_RawMalloc(sizeof(wchar_t*) * (argc+1));
 diff --git a/Modules/readline.c b/Modules/readline.c
 --- a/Modules/readline.c
 +++ b/Modules/readline.c
-@@ -1051,8 +1051,12 @@ setup_readline(readlinestate *mod_state)
+@@ -1180,8 +1180,12 @@ setup_readline(readlinestate *mod_state)
  
  /* Wrapper around GNU readline that handles signals differently. */
  
@@ -207,7 +118,7 @@ diff --git a/Modules/readline.c b/Modules/readline.c
 diff --git a/Modules/signalmodule.c b/Modules/signalmodule.c
 --- a/Modules/signalmodule.c
 +++ b/Modules/signalmodule.c
-@@ -29,7 +29,7 @@
+@@ -32,7 +32,7 @@
  #  define PYPTHREAD_SIGMASK
  #endif
  
@@ -219,7 +130,7 @@ diff --git a/Modules/signalmodule.c b/Modules/signalmodule.c
 diff --git a/Modules/socketmodule.c b/Modules/socketmodule.c
 --- a/Modules/socketmodule.c
 +++ b/Modules/socketmodule.c
-@@ -310,6 +310,14 @@ if_indextoname(index) -- return the corresponding interface name\n\
+@@ -339,6 +339,14 @@ http://cvsweb.netbsd.org/bsdweb.cgi/src/lib/libc/net/getaddrinfo.c.diff?r1=1.82&
  #  include "addrinfo.h"
  #endif
  
@@ -257,9 +168,9 @@ diff --git a/Modules/timemodule.c b/Modules/timemodule.c
  #if defined(__WATCOMC__) && !defined(__QNX__)
  #include <i86.h>
  #else
-@@ -41,6 +47,13 @@
- #include <mach/mach_time.h>
- #endif
+@@ -30,6 +36,13 @@
+ #endif /* MS_WINDOWS */
+ #endif /* !__WATCOMC__ || __QNX__ */
  
 +#if defined(__native_client__) && !defined(__GLIBC__)
 +int clock_settime(clockid_t clk_id, const struct timespec *tp) {
@@ -269,14 +180,40 @@ diff --git a/Modules/timemodule.c b/Modules/timemodule.c
 +#endif
 +
  /* Forward declarations */
- static int floatsleep(double);
+ static int pysleep(_PyTime_t);
  static PyObject* floattime(_Py_clock_info_t *info);
+diff --git a/Programs/python.c b/Programs/python.c
+--- a/Programs/python.c
++++ b/Programs/python.c
+@@ -15,6 +15,22 @@ wmain(int argc, wchar_t **argv)
+ }
+ #else
+ 
++#ifdef __native_client__
++#include "nacl_main.h"
++
++#ifdef __arm__
++#define DATA_FILE "_platform_specific/arm/pydata.tar"
++#elif defined __i386__
++#define DATA_FILE "_platform_specific/i686/pydata.tar"
++#elif defined __x86_64__
++#define DATA_FILE "_platform_specific/x86_64/pydata.tar"
++#elif defined __pnacl__
++#define DATA_FILE "pydata.tar"
++#else
++#error "Unknown arch"
++#endif
++#endif
++
+ int
+ main(int argc, char **argv)
+ {
 diff --git a/Python/dynload_shlib.c b/Python/dynload_shlib.c
 --- a/Python/dynload_shlib.c
 +++ b/Python/dynload_shlib.c
-@@ -69,6 +69,11 @@ dl_funcptr _PyImport_GetDynLoadFunc(const char *shortname,
+@@ -71,6 +71,11 @@ _PyImport_FindSharedFuncptr(const char *prefix,
      PyOS_snprintf(funcname, sizeof(funcname),
-                   LEAD_UNDERSCORE "PyInit_%.200s", shortname);
+                   LEAD_UNDERSCORE "%.20s_%.200s", prefix, shortname);
  
 +
 +/* Native Client's fstat() imlemenation doesn't set st_dev
@@ -285,9 +222,9 @@ diff --git a/Python/dynload_shlib.c b/Python/dynload_shlib.c
 +#ifndef __native_client__
      if (fp != NULL) {
          int i;
-         struct stat statb;
-@@ -89,6 +94,7 @@ dl_funcptr _PyImport_GetDynLoadFunc(const char *shortname,
-             handles[nhandles].ino = statb.st_ino;
+         struct _Py_stat_struct status;
+@@ -89,6 +94,7 @@ _PyImport_FindSharedFuncptr(const char *prefix,
+             handles[nhandles].ino = status.st_ino;
          }
      }
 +#endif
@@ -297,7 +234,7 @@ diff --git a/Python/dynload_shlib.c b/Python/dynload_shlib.c
 diff --git a/Python/fileutils.c b/Python/fileutils.c
 --- a/Python/fileutils.c
 +++ b/Python/fileutils.c
-@@ -599,6 +599,12 @@ get_inheritable(int fd, int raise)
+@@ -771,6 +771,12 @@ get_inheritable(int fd, int raise)
  
      flags = fcntl(fd, F_GETFD, 0);
      if (flags == -1) {
@@ -310,7 +247,7 @@ diff --git a/Python/fileutils.c b/Python/fileutils.c
          if (raise)
              PyErr_SetFromErrno(PyExc_OSError);
          return -1;
-@@ -707,6 +713,12 @@ set_inheritable(int fd, int inheritable, int raise, int *atomic_flag_works)
+@@ -880,6 +886,12 @@ set_inheritable(int fd, int inheritable, int raise, int *atomic_flag_works)
      /* slow-path: fcntl() requires two syscalls */
      flags = fcntl(fd, F_GETFD);
      if (flags < 0) {
@@ -337,6 +274,23 @@ diff --git a/Python/getversion.c b/Python/getversion.c
  		      PY_VERSION, Py_GetBuildInfo(), Py_GetCompiler());
  	return version;
  }
+diff --git a/Python/random.c b/Python/random.c
+--- a/Python/random.c
++++ b/Python/random.c
+@@ -551,7 +551,12 @@ _PyRandom_Init(void)
+     */
+ 
+     env = Py_GETENV("PYTHONHASHSEED");
+-    if (env && *env != '\0' && strcmp(env, "random") != 0) {
++
++    if (!env || *env == '\0') {
++        /* On NaCL, randomization doesn't work out of the box, so default to having it off. */
++        memset(secret, 0, secret_size);
++    }
++    else if (env && *env != '\0' && strcmp(env, "random") != 0) {
+         char *endptr = env;
+         unsigned long seed;
+         seed = strtoul(env, &endptr, 10);
 diff --git a/Python/thread.c b/Python/thread.c
 --- a/Python/thread.c
 +++ b/Python/thread.c
@@ -363,99 +317,56 @@ diff --git a/Python/thread.c b/Python/thread.c
 diff --git a/configure b/configure
 --- a/configure
 +++ b/configure
-@@ -2969,7 +2969,7 @@ $as_echo_n "checking for python interpreter for cross build... " >&6; }
- 	fi
-         { $as_echo "$as_me:${as_lineno-$LINENO}: result: $interp" >&5
- $as_echo "$interp" >&6; }
--	PYTHON_FOR_BUILD='_PYTHON_PROJECT_BASE=$(abs_builddir) _PYTHON_HOST_PLATFORM=$(_PYTHON_HOST_PLATFORM) PYTHONPATH=$(shell test -f pybuilddir.txt && echo $(abs_builddir)/`cat pybuilddir.txt`:)$(srcdir)/Lib:$(srcdir)/Lib/$(PLATDIR) '$interp
-+	PYTHON_FOR_BUILD='_PYTHON_PROJECT_BASE=$(abs_builddir) _PYTHON_HOST_PLATFORM=$(_PYTHON_HOST_PLATFORM) PYTHONPATH=$(srcdir)/Lib:$(srcdir)/Lib/$(PLATDIR) '$interp
-     fi
- elif test "$cross_compiling" = maybe; then
-     as_fn_error $? "Cross compiling required --host=HOST-TUPLE and --build=ARCH" "$LINENO" 5
-@@ -3284,6 +3284,9 @@ then
-        # a lot of different things including 'define_xopen_source'
-        # in the case statement below.
- 	case "$host" in
-+	*-*-nacl*)
-+		ac_sys_system=NaCl
-+		;;
- 	*-*-linux*)
- 		ac_sys_system=Linux
- 		;;
-@@ -3332,6 +3335,15 @@ if test "$cross_compiling" = yes; then
- 			_host_cpu=$host_cpu
- 		esac
- 		;;
-+	*-*-nacl*)
-+		case "$host_cpu" in
-+		arm*)
-+			_host_cpu=arm
-+			;;
-+		*)
-+			_host_cpu=$host_cpu
-+		esac
-+		;;
- 	*-*-cygwin*)
- 		_host_cpu=
- 		;;
-@@ -5376,7 +5388,11 @@ if test -d casesensitivetestdir
- then
-     { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
- $as_echo "yes" >&6; }
--    BUILDEXEEXT=.exe
-+    if [ -z $EXEEXT ]; then
-+        BUILDEXEEXT=.exe
-+    else
-+        BUILDEXEEXT=$EXEEXT
-+    fi
- else
- 	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
- $as_echo "no" >&6; }
-@@ -6275,11 +6291,11 @@ then
- 		# debug builds.
- 		OPT="-g -O0 -Wall $STRICT_PROTO"
- 	    else
--		OPT="-g $WRAP -O3 -Wall $STRICT_PROTO"
-+		OPT="-g $WRAP -O2 -Wall $STRICT_PROTO"
- 	    fi
- 	    ;;
- 	*)
--	    OPT="-O3 -Wall $STRICT_PROTO"
-+	    OPT="-O2 -Wall $STRICT_PROTO"
- 	    ;;
- 	esac
- 	case $ac_sys_system in
-@@ -8579,7 +8595,7 @@ then
- 			BLDSHARED="$LDSHARED"
- 		fi
- 		;;
--	Linux*|GNU*|QNX*)
-+	Linux*|GNU*|QNX*|NaCl*)
- 		LDSHARED='$(CC) -shared'
- 		LDCXXSHARED='$(CXX) -shared';;
- 	BSD/OS*/4*)
-@@ -8650,7 +8666,7 @@ then
- 		 then CCSHARED="-fPIC";
- 		 else CCSHARED="+z";
- 		 fi;;
--	Linux*|GNU*) CCSHARED="-fPIC";;
-+	Linux*|GNU*|NaCl*) CCSHARED="-fPIC";;
- 	BSD/OS*/4*) CCSHARED="-fpic";;
- 	FreeBSD*|NetBSD*|OpenBSD*|DragonFly*) CCSHARED="-fPIC";;
- 	OpenUNIX*|UnixWare*)
-@@ -8683,7 +8699,7 @@ then
- 	    LINKFORSHARED="-Wl,-E -Wl,+s";;
- #	    LINKFORSHARED="-Wl,-E -Wl,+s -Wl,+b\$(BINLIBDEST)/lib-dynload";;
- 	BSD/OS/4*) LINKFORSHARED="-Xlinker -export-dynamic";;
--	Linux*|GNU*) LINKFORSHARED="-Xlinker -export-dynamic";;
-+	Linux*|GNU*|NaCl*) LINKFORSHARED="-Xlinker -export-dynamic";;
- 	# -u libsys_s pulls in all symbols in libsys
- 	Darwin/*)
- 		LINKFORSHARED="$extra_undefs -framework CoreFoundation"
-diff --git a/configure.ac b/configure.ac
---- a/configure.ac
-+++ b/configure.ac
-@@ -373,6 +373,9 @@ then
+@@ -784,6 +784,7 @@ infodir
+ docdir
+ oldincludedir
+ includedir
++runstatedir
+ localstatedir
+ sharedstatedir
+ sysconfdir
+@@ -895,6 +896,7 @@ datadir='${datarootdir}'
+ sysconfdir='${prefix}/etc'
+ sharedstatedir='${prefix}/com'
+ localstatedir='${prefix}/var'
++runstatedir='${localstatedir}/run'
+ includedir='${prefix}/include'
+ oldincludedir='/usr/include'
+ docdir='${datarootdir}/doc/${PACKAGE_TARNAME}'
+@@ -1147,6 +1149,15 @@ do
+   | -silent | --silent | --silen | --sile | --sil)
+     silent=yes ;;
+ 
++  -runstatedir | --runstatedir | --runstatedi | --runstated \
++  | --runstate | --runstat | --runsta | --runst | --runs \
++  | --run | --ru | --r)
++    ac_prev=runstatedir ;;
++  -runstatedir=* | --runstatedir=* | --runstatedi=* | --runstated=* \
++  | --runstate=* | --runstat=* | --runsta=* | --runst=* | --runs=* \
++  | --run=* | --ru=* | --r=*)
++    runstatedir=$ac_optarg ;;
++
+   -sbindir | --sbindir | --sbindi | --sbind | --sbin | --sbi | --sb)
+     ac_prev=sbindir ;;
+   -sbindir=* | --sbindir=* | --sbindi=* | --sbind=* | --sbin=* \
+@@ -1284,7 +1295,7 @@ fi
+ for ac_var in	exec_prefix prefix bindir sbindir libexecdir datarootdir \
+ 		datadir sysconfdir sharedstatedir localstatedir includedir \
+ 		oldincludedir docdir infodir htmldir dvidir pdfdir psdir \
+-		libdir localedir mandir
++		libdir localedir mandir runstatedir
+ do
+   eval ac_val=\$$ac_var
+   # Remove trailing slashes.
+@@ -1437,6 +1448,7 @@ Fine tuning of the installation directories:
+   --sysconfdir=DIR        read-only single-machine data [PREFIX/etc]
+   --sharedstatedir=DIR    modifiable architecture-independent data [PREFIX/com]
+   --localstatedir=DIR     modifiable single-machine data [PREFIX/var]
++  --runstatedir=DIR       modifiable per-process data [LOCALSTATEDIR/run]
+   --libdir=DIR            object code libraries [EPREFIX/lib]
+   --includedir=DIR        C header files [PREFIX/include]
+   --oldincludedir=DIR     C header files for non-gcc [/usr/include]
+@@ -3249,6 +3261,9 @@ then
  	*-*-cygwin*)
  		ac_sys_system=Cygwin
  		;;
@@ -465,7 +376,7 @@ diff --git a/configure.ac b/configure.ac
  	*)
  		# for now, limit cross builds to known configurations
  		MACHDEP="unknown"
-@@ -415,6 +418,15 @@ if test "$cross_compiling" = yes; then
+@@ -3291,6 +3306,15 @@ if test "$cross_compiling" = yes; then
  			_host_cpu=$host_cpu
  		esac
  		;;
@@ -481,7 +392,7 @@ diff --git a/configure.ac b/configure.ac
  	*-*-cygwin*)
  		_host_cpu=
  		;;
-@@ -2055,7 +2067,7 @@ then
+@@ -9264,7 +9288,7 @@ then
  			BLDSHARED="$LDSHARED"
  		fi
  		;;
@@ -490,21 +401,77 @@ diff --git a/configure.ac b/configure.ac
  		LDSHARED='$(CC) -shared'
  		LDCXXSHARED='$(CXX) -shared';;
  	BSD/OS*/4*)
-@@ -2124,7 +2136,7 @@ then
- 		 then CCSHARED="-fPIC";
+@@ -9336,7 +9360,7 @@ then
  		 else CCSHARED="+z";
  		 fi;;
+ 	Linux-android*) ;;
 -	Linux*|GNU*) CCSHARED="-fPIC";;
 +	Linux*|GNU*|NaCl*) CCSHARED="-fPIC";;
  	BSD/OS*/4*) CCSHARED="-fpic";;
  	FreeBSD*|NetBSD*|OpenBSD*|DragonFly*) CCSHARED="-fPIC";;
  	OpenUNIX*|UnixWare*)
-@@ -2155,7 +2167,7 @@ then
- 	    LINKFORSHARED="-Wl,-E -Wl,+s";;
+@@ -9370,7 +9394,7 @@ then
  #	    LINKFORSHARED="-Wl,-E -Wl,+s -Wl,+b\$(BINLIBDEST)/lib-dynload";;
  	BSD/OS/4*) LINKFORSHARED="-Xlinker -export-dynamic";;
+ 	Linux-android*) LINKFORSHARED="-pie -Xlinker -export-dynamic";;
 -	Linux*|GNU*) LINKFORSHARED="-Xlinker -export-dynamic";;
 +	Linux*|GNU*|NaCl*) LINKFORSHARED="-Xlinker -export-dynamic";;
  	# -u libsys_s pulls in all symbols in libsys
- 	Darwin/*) 
+ 	Darwin/*)
+ 		LINKFORSHARED="$extra_undefs -framework CoreFoundation"
+diff --git a/configure.ac b/configure.ac
+--- a/configure.ac
++++ b/configure.ac
+@@ -379,6 +379,9 @@ then
+ 	*-*-cygwin*)
+ 		ac_sys_system=Cygwin
+ 		;;
++	*-*-nacl*)
++		ac_sys_system=NaCl
++		;;
+ 	*)
+ 		# for now, limit cross builds to known configurations
+ 		MACHDEP="unknown"
+@@ -421,6 +424,15 @@ if test "$cross_compiling" = yes; then
+ 			_host_cpu=$host_cpu
+ 		esac
+ 		;;
++	*-*-nacl*)
++		case "$host_cpu" in
++		arm*)
++			_host_cpu=arm
++			;;
++		*)
++			_host_cpu=$host_cpu
++		esac
++		;;
+ 	*-*-cygwin*)
+ 		_host_cpu=
+ 		;;
+@@ -2510,7 +2522,7 @@ then
+ 			BLDSHARED="$LDSHARED"
+ 		fi
+ 		;;
+-	Linux*|GNU*|QNX*)
++	Linux*|GNU*|QNX*|NaCl*)
+ 		LDSHARED='$(CC) -shared'
+ 		LDCXXSHARED='$(CXX) -shared';;
+ 	BSD/OS*/4*)
+@@ -2580,7 +2592,7 @@ then
+ 		 else CCSHARED="+z";
+ 		 fi;;
+ 	Linux-android*) ;;
+-	Linux*|GNU*) CCSHARED="-fPIC";;
++	Linux*|GNU*|NaCl*) CCSHARED="-fPIC";;
+ 	BSD/OS*/4*) CCSHARED="-fpic";;
+ 	FreeBSD*|NetBSD*|OpenBSD*|DragonFly*) CCSHARED="-fPIC";;
+ 	OpenUNIX*|UnixWare*)
+@@ -2612,7 +2624,7 @@ then
+ #	    LINKFORSHARED="-Wl,-E -Wl,+s -Wl,+b\$(BINLIBDEST)/lib-dynload";;
+ 	BSD/OS/4*) LINKFORSHARED="-Xlinker -export-dynamic";;
+ 	Linux-android*) LINKFORSHARED="-pie -Xlinker -export-dynamic";;
+-	Linux*|GNU*) LINKFORSHARED="-Xlinker -export-dynamic";;
++	Linux*|GNU*|NaCl*) LINKFORSHARED="-Xlinker -export-dynamic";;
+ 	# -u libsys_s pulls in all symbols in libsys
+ 	Darwin/*)
  		LINKFORSHARED="$extra_undefs -framework CoreFoundation"

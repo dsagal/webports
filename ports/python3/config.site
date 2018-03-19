@@ -11,4 +11,4 @@ ac_cv_func_sched_setscheduler=no
 # in unistd.h even though under newlib it is not.
 # TODO(sbc): Remove this once newlib is fixed:
 # https://code.google.com/p/nativeclient/issues/detail?id=3551
-ac_cv_pthread=yes
+# ac_cv_pthread=yes
